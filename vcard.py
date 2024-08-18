@@ -13,6 +13,18 @@ class Tools:
     def __init__(self):
         pass
 
+    def _validate_date(self, date_string: str, format: str = "%Y-%m-%dT%H:%M:%S%z") -> Optional[datetime]:
+        """
+        Validate and parse a date string in ISO 8601 format.
+        :param date_string: The date string to validate.
+        :param format: The expected format of the date string (default: ISO 8601).
+        :return: Parsed datetime object if valid, None otherwise.
+        """
+        try:
+            return datetime.strptime(date_string, format)
+        except ValueError:
+            return None
+
     async def create_contact_vcard(
         self,
         __event_emitter__: Callable[[dict], Awaitable[None]],
@@ -40,7 +52,7 @@ class Tools:
         :param address: The address of the contact.
         :param title: The job title of the contact.
         :param website: The website of the contact.
-        :param birthday: The birthday of the contact (YYYY-MM-DD).
+        :param birthday: The birthday of the contact (ISO 8601 format: YYYY-MM-DDTHH:MM:SS±HHMM).
         :param note: Additional notes about the contact.
         :param photo_url: URL of the contact's photo.
         :return: The VCF formatted VCard contact file contents.
@@ -77,17 +89,15 @@ class Tools:
             vcard.url.value = website
 
         if birthday:
-            try:
-                parsed_date = datetime.strptime(birthday, "%Y-%m-%d")
-                formatted_birthday = parsed_date.strftime("%Y-%m-%d")
+            parsed_date = self._validate_date(birthday)
+            if parsed_date:
                 vcard.add("bday")
-                vcard.bday.value = formatted_birthday
-            except ValueError:
-                # Handle invalid date format
+                vcard.bday.value = parsed_date.strftime("%Y-%m-%dT%H:%M:%S%z")
+            else:
                 await __event_emitter__(
                 {
                     "data": {
-                        "description": f"Invalid date format for birthday: {birthday}. Expected format: YYYY-MM-DD.",
+                        "description": f"Invalid date format for birthday: {birthday}. Expected format: YYYY-MM-DDTHH:MM:SS±HHMM.",
                         "status": "complete",
                         "done": True,
                     },
@@ -135,10 +145,10 @@ class Tools:
         summary: str,
         status: Optional[str] = None,
         uid: Optional[str] = None,
-        dtstamp: Optional[datetime] = None,
+        dtstamp: Optional[str] = None,
         sequence: Optional[str] = None,
-        created: Optional[datetime] = None,
-        last_modified: Optional[datetime] = None,
+        created: Optional[str] = None,
+        last_modified: Optional[str] = None,
         description: Optional[str] = None,
         percent_complete: Optional[str] = None,
         **kwargs
@@ -149,20 +159,18 @@ class Tools:
         :param summary: The required summary of the TODO item.
         :param status: The status of the TODO item.
         :param uid: The unique identifier for the TODO item. Should be left empty if new entry, otherwise provide the existing UID.
-        :param dtstamp: The timestamp of the TODO item.
+        :param dtstamp: The timestamp of the TODO item (ISO 8601 format: YYYY-MM-DDTHH:MM:SS±HHMM).
         :param sequence: The sequence number of the TODO item.
-        :param created: The creation date of the TODO item. If empty, will be set to now.
-        :param last_modified: The last modified date of the TODO item.
+        :param created: The creation date of the TODO item (ISO 8601 format: YYYY-MM-DDTHH:MM:SS±HHMM). If empty, will be set to now.
+        :param last_modified: The last modified date of the TODO item (ISO 8601 format: YYYY-MM-DDTHH:MM:SS±HHMM).
         :param description: The description of the TODO item. This description may also be formatted in Markdown, but be careful to escape any special characters.
         :param percent_complete: The percentage of completion of the TODO item.
         :return: The iCalendar formatted TODO item.
         """
         cal = vobject.iCalendar()
-        # cal.add('version').value = '2.0'
-        # cal.add('prodid').value = '+//IDN bitfire.at//ical4android'
 
         todo = cal.add('vtodo')
-        todo.add('dtstamp').value = dtstamp or datetime.now()
+        todo.add('dtstamp').value = self._validate_date(dtstamp) if dtstamp else datetime.now()
         if uid:
             todo.add('uid').value = uid
         todo.add('summary').value = summary
@@ -170,9 +178,13 @@ class Tools:
         if sequence:
             todo.add('sequence').value = sequence
         if created:
-            todo.add('created').value = created
+            parsed_created = self._validate_date(created)
+            if parsed_created:
+                todo.add('created').value = parsed_created
         if last_modified:
-            todo.add('last_modified').value = last_modified
+            parsed_last_modified = self._validate_date(last_modified)
+            if parsed_last_modified:
+                todo.add('last-modified').value = parsed_last_modified
         if description:
             todo.add('description').value = description
         if percent_complete:
