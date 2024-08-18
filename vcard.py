@@ -106,16 +106,28 @@ class Tools:
         for key, value in kwargs.items():
             vcard.add(key).value = value
 
-        result = vcard.serialize()
+        try:
+            result = vcard.serialize()
 
-        await __event_emitter__(
-            {
-                "type": "message",
-                "data": {"content": f"```VCARD\n{result}\n```\n"},
-            }
-        )
+            await __event_emitter__(
+                {
+                    "type": "message",
+                    "data": {"content": f"```VCARD\n{result}\n```\n"},
+                }
+            )
 
-        return result
+            return result
+        except Exception as e:
+            await __event_emitter__(
+                {
+                    "data": {
+                        "description": f"Error serializing VCard: {e}",
+                        "status": "complete",
+                        "done": True,
+                    },
+                    "type": "status",
+                }
+            )
 
     async def create_icalendar_todo(
         self,
@@ -136,10 +148,10 @@ class Tools:
         Note: strictly adhere to JSON syntax.
         :param summary: The required summary of the TODO item.
         :param status: The status of the TODO item.
-        :param uid: The unique identifier for the TODO item.
+        :param uid: The unique identifier for the TODO item. Should be left empty if new entry, otherwise provide the existing UID.
         :param dtstamp: The timestamp of the TODO item.
         :param sequence: The sequence number of the TODO item.
-        :param created: The creation date of the TODO item.
+        :param created: The creation date of the TODO item. If empty, will be set to now.
         :param last_modified: The last modified date of the TODO item.
         :param description: The description of the TODO item. This description may also be formatted in Markdown, but be careful to escape any special characters.
         :param percent_complete: The percentage of completion of the TODO item.
@@ -147,7 +159,7 @@ class Tools:
         """
         cal = vobject.iCalendar()
         # cal.add('version').value = '2.0'
-        cal.add('prodid').value = '+//IDN bitfire.at//ical4android'
+        # cal.add('prodid').value = '+//IDN bitfire.at//ical4android'
 
         todo = cal.add('vtodo')
         todo.add('dtstamp').value = dtstamp or datetime.now()
@@ -165,14 +177,29 @@ class Tools:
             todo.add('description').value = description
         if percent_complete:
             todo.add('percent-complete').value = percent_complete
+        
+        for key, value in kwargs.items():
+            todo.add(key).value = value
 
-        result = cal.serialize()
+        try:
+            result = cal.serialize()
 
-        await __event_emitter__(
-            {
-                "type": "message",
-                "data": {"content": f"```VCALENDAR\n{result}\n```\n"},
-            }
-        )
+            await __event_emitter__(
+                {
+                    "type": "message",
+                    "data": {"content": f"```VCALENDAR\n{result}\n```\n"},
+                }
+            )
 
-        return result
+            return result
+        except Exception as e:
+            await __event_emitter__(
+                {
+                    "data": {
+                        "description": f"Error serializing iCalendar: {e}",
+                        "status": "complete",
+                        "done": True,
+                    },
+                    "type": "status",
+                }
+            )
