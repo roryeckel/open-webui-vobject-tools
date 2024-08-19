@@ -6,7 +6,6 @@ version: 0.0.1
 requirements: vobject, pytz
 """
 import vobject
-import asyncio
 from datetime import datetime
 from pytz import UTC
 from dateutil import parser
