@@ -167,7 +167,7 @@ class Tools:
         :param last_modified: The last modified date of the TODO item.
         :param description: The description of the TODO item. This description may also be formatted in Markdown, but be careful to escape any special characters.
         :param percent_complete: The percentage of completion of the TODO item.
-        :return: The iCalendar formatted TODO item.
+        :return: The iCalendar ICS formatted TODO item.
         """
         cal = vobject.iCalendar()
 
@@ -239,7 +239,7 @@ class Tools:
         :param dtend: The end date-time of the Event.
         :param location: The location of the Event.
         :param description: The description of the Event.
-        :return: The iCalendar formatted Event item.
+        :return: The iCalendar ICS formatted Event item.
         """
         cal = vobject.iCalendar()
 
