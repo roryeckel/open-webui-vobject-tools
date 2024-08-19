@@ -3,27 +3,29 @@ title: VCard Generation Toolkit
 author: ex0dus
 author_url: https://github.com/roryeckel
 version: 0.0.1
-requirements: vobject
+requirements: vobject, pytz
 """
 import vobject
+import asyncio
 from datetime import datetime
+from pytz import UTC
+from dateutil import parser
 from typing import Optional, Callable, Awaitable
+
+def validate_date(date_string: str) -> Optional[datetime]:
+    """
+    Validate and parse a date string.
+    :param date_string: The date string to validate.
+    :return: Parsed UTC datetime object if valid, None otherwise.
+    """
+    try:
+        return parser.parse(date_string).astimezone(UTC)
+    except ValueError:
+        return None
 
 class Tools:
     def __init__(self):
         pass
-
-    def _validate_date(self, date_string: str, format: str = "%Y-%m-%dT%H:%M:%S%z") -> Optional[datetime]:
-        """
-        Validate and parse a date string in ISO 8601 format.
-        :param date_string: The date string to validate.
-        :param format: The expected format of the date string (default: ISO 8601).
-        :return: Parsed datetime object if valid, None otherwise.
-        """
-        try:
-            return datetime.strptime(date_string, format)
-        except ValueError:
-            return None
 
     async def create_contact_vcard(
         self,
@@ -52,7 +54,7 @@ class Tools:
         :param address: The address of the contact.
         :param title: The job title of the contact.
         :param website: The website of the contact.
-        :param birthday: The birthday of the contact (ISO 8601 format: YYYY-MM-DDTHH:MM:SS±HHMM).
+        :param birthday: The birthday of the contact.
         :param note: Additional notes about the contact.
         :param photo_url: URL of the contact's photo.
         :return: The VCF formatted VCard contact file contents.
@@ -89,10 +91,9 @@ class Tools:
             vcard.url.value = website
 
         if birthday:
-            parsed_date = self._validate_date(birthday)
+            parsed_date = validate_date(birthday)
             if parsed_date:
-                vcard.add("bday")
-                vcard.bday.value = parsed_date.strftime("%Y-%m-%dT%H:%M:%S%z")
+                vcard.add("bday").value = parsed_date
             else:
                 await __event_emitter__(
                 {
@@ -128,6 +129,8 @@ class Tools:
 
             return result
         except Exception as e:
+            print(e)
+            vcard.prettyPrint()
             await __event_emitter__(
                 {
                     "data": {
@@ -159,10 +162,10 @@ class Tools:
         :param summary: The required summary of the TODO item.
         :param status: The status of the TODO item.
         :param uid: The unique identifier for the TODO item. Should be left empty if new entry, otherwise provide the existing UID.
-        :param dtstamp: The timestamp of the TODO item (ISO 8601 format: YYYY-MM-DDTHH:MM:SS±HHMM).
+        :param dtstamp: The timestamp of the TODO item.
         :param sequence: The sequence number of the TODO item.
-        :param created: The creation date of the TODO item (ISO 8601 format: YYYY-MM-DDTHH:MM:SS±HHMM). If empty, will be set to now.
-        :param last_modified: The last modified date of the TODO item (ISO 8601 format: YYYY-MM-DDTHH:MM:SS±HHMM).
+        :param created: The creation date of the TODO item. If empty, will be set to now.
+        :param last_modified: The last modified date of the TODO item.
         :param description: The description of the TODO item. This description may also be formatted in Markdown, but be careful to escape any special characters.
         :param percent_complete: The percentage of completion of the TODO item.
         :return: The iCalendar formatted TODO item.
@@ -170,7 +173,7 @@ class Tools:
         cal = vobject.iCalendar()
 
         todo = cal.add('vtodo')
-        todo.add('dtstamp').value = self._validate_date(dtstamp) if dtstamp else datetime.now()
+        todo.add('dtstamp').value = validate_date(dtstamp) if dtstamp else datetime.now(UTC)
         if uid:
             todo.add('uid').value = uid
         todo.add('summary').value = summary
@@ -178,11 +181,11 @@ class Tools:
         if sequence:
             todo.add('sequence').value = sequence
         if created:
-            parsed_created = self._validate_date(created)
+            parsed_created = validate_date(created)
             if parsed_created:
                 todo.add('created').value = parsed_created
         if last_modified:
-            parsed_last_modified = self._validate_date(last_modified)
+            parsed_last_modified = validate_date(last_modified)
             if parsed_last_modified:
                 todo.add('last-modified').value = parsed_last_modified
         if description:
@@ -205,6 +208,78 @@ class Tools:
 
             return result
         except Exception as e:
+            print(e)
+            cal.prettyPrint()
+            await __event_emitter__(
+                {
+                    "data": {
+                        "description": f"Error serializing iCalendar: {e}",
+                        "status": "complete",
+                        "done": True,
+                    },
+                    "type": "status",
+                }
+            )
+
+    async def create_icalendar_event(
+        self,
+        __event_emitter__: Callable[[dict], Awaitable[None]],
+        summary: str,
+        dtstart: str,
+        dtstamp: Optional[str] = None,
+        dtend: Optional[str] = None,
+        location: Optional[str] = None,
+        description: Optional[str] = None,
+        **kwargs
+    ) -> str:
+        """
+        Create an iCalendar Event item based on the input parameters.
+        :param summary: The required summary of the Event.
+        :param dtstart: The start date-time of the Event.
+        :param dtstamp: The timestamp of the Event.
+        :param dtend: The end date-time of the Event.
+        :param location: The location of the Event.
+        :param description: The description of the Event.
+        :return: The iCalendar formatted Event item.
+        """
+        cal = vobject.iCalendar()
+
+        event = cal.add('vevent')
+        event.add('dtstamp').value = validate_date(dtstamp) if dtstamp else datetime.now(UTC)
+        event.add('summary').value = summary
+
+        parsed_dtstart = validate_date(dtstart)
+        if parsed_dtstart:
+            event.add('dtstart').value = parsed_dtstart
+
+        if not dtend:
+            dtend = dtstart
+
+        parsed_dtend = validate_date(dtend)
+        if parsed_dtend:
+            event.add('dtend').value = parsed_dtend
+
+        if location:
+            event.add('location').value = location
+
+        if description:
+            event.add('description').value = description
+
+        for key, value in kwargs.items():
+            event.add(key).value = value
+
+        try:
+            result = cal.serialize()
+            await __event_emitter__(
+                {
+                    "type": "message",
+                    "data": {"content": f"```VCALENDAR\n{result}\n```\n"},
+                }
+            )
+            return result
+        except Exception as e:
+            print(e)
+            cal.prettyPrint()
             await __event_emitter__(
                 {
                     "data": {
