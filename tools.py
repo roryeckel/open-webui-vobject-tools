@@ -9,7 +9,7 @@ import vobject
 from datetime import datetime
 from pytz import UTC
 from dateutil import parser
-from typing import Optional, Callable, Awaitable
+from typing import Callable, Awaitable, Optional
 
 def validate_date(date_string: str) -> Optional[datetime]:
     """
@@ -30,17 +30,16 @@ class Tools:
         self,
         __event_emitter__: Callable[[dict], Awaitable[None]],
         first_name: str,
-        last_name: Optional[str] = None,
-        organization: Optional[str] = None,
-        email: Optional[str] = None,
-        phone: Optional[str] = None,
-        address: Optional[str] = None,
-        title: Optional[str] = None,
-        website: Optional[str] = None,
-        birthday: Optional[str] = None,
-        note: Optional[str] = None,
-        photo_url: Optional[str] = None,
-        **kwargs
+        last_name: str = None,
+        organization: str = None,
+        email: str = None,
+        phone: str = None,
+        address: str = None,
+        title: str = None,
+        website: str = None,
+        birthday: str = None,
+        note: str = None,
+        photo_url: str = None
     ) -> str:
         """
         Create a contact VCard based on the input parameters.
@@ -113,8 +112,8 @@ class Tools:
             vcard.photo.value = photo_url
             vcard.photo.type_param = "URL"
 
-        for key, value in kwargs.items():
-            vcard.add(key).value = value
+        # for key, value in kwargs.items():
+        #     vcard.add(key).value = value
 
         try:
             result = vcard.serialize()
@@ -145,15 +144,14 @@ class Tools:
         self,
         __event_emitter__: Callable[[dict], Awaitable[None]],
         summary: str,
-        status: Optional[str] = None,
-        uid: Optional[str] = None,
-        dtstamp: Optional[str] = None,
-        sequence: Optional[str] = None,
-        created: Optional[str] = None,
-        last_modified: Optional[str] = None,
-        description: Optional[str] = None,
-        percent_complete: Optional[str] = None,
-        **kwargs
+        status: str = None,
+        uid: str = None,
+        dtstamp: str = None,
+        sequence: str = None,
+        created: str = None,
+        last_modified: str = None,
+        description: str = None,
+        percent_complete: str = None
     ) -> str:
         """
         Create an iCalendar TODO item based on the input parameters.
@@ -192,8 +190,8 @@ class Tools:
         if percent_complete:
             todo.add('percent-complete').value = percent_complete
         
-        for key, value in kwargs.items():
-            todo.add(key).value = value
+        # for key, value in kwargs.items():
+        #     todo.add(key).value = value
 
         try:
             result = cal.serialize()
@@ -225,11 +223,10 @@ class Tools:
         __event_emitter__: Callable[[dict], Awaitable[None]],
         summary: str,
         dtstart: str,
-        dtstamp: Optional[str] = None,
-        dtend: Optional[str] = None,
-        location: Optional[str] = None,
-        description: Optional[str] = None,
-        **kwargs
+        dtstamp: str = None,
+        dtend: str = None,
+        location: str = None,
+        description: str = None
     ) -> str:
         """
         Create an iCalendar Event item based on the input parameters.
@@ -264,8 +261,8 @@ class Tools:
         if description:
             event.add('description').value = description
 
-        for key, value in kwargs.items():
-            event.add(key).value = value
+        # for key, value in kwargs.items():
+        #     event.add(key).value = value
 
         try:
             result = cal.serialize()
