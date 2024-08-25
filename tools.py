@@ -42,7 +42,7 @@ class Tools:
         photo_url: str = None
     ) -> str:
         """
-        Create a contact VCard based on the input parameters.
+        Create a new contact VCard based on the input parameters.
         Note: strictly adhere to JSON syntax.
         :param first_name: The first name of the contact.
         :param last_name: The last name of the contact.
@@ -91,7 +91,7 @@ class Tools:
         if birthday:
             parsed_date = validate_date(birthday)
             if parsed_date:
-                vcard.add("bday").value = parsed_date
+                vcard.add("bday").value = parsed_date.isoformat()
             else:
                 await __event_emitter__(
                 {
@@ -154,7 +154,7 @@ class Tools:
         percent_complete: str = None
     ) -> str:
         """
-        Create an iCalendar TODO item based on the input parameters.
+        Create a new iCalendar TODO item based on the input parameters.
         Note: strictly adhere to JSON syntax.
         :param summary: The required summary of the TODO item.
         :param status: The status of the TODO item.
@@ -229,7 +229,7 @@ class Tools:
         description: str = None
     ) -> str:
         """
-        Create an iCalendar Event item based on the input parameters.
+        Create a new iCalendar Event item based on the input parameters.
         :param summary: The required summary of the Event.
         :param dtstart: The start date-time of the Event.
         :param dtstamp: The timestamp of the Event.
