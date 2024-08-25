@@ -121,7 +121,7 @@ class Tools:
             await __event_emitter__(
                 {
                     "type": "message",
-                    "data": {"content": f"```VCARD\n{result}\n```\n"},
+                    "data": {"content": f"```vcard\n{result}\n```\n"},
                 }
             )
 
@@ -199,7 +199,7 @@ class Tools:
             await __event_emitter__(
                 {
                     "type": "message",
-                    "data": {"content": f"```VCALENDAR\n{result}\n```\n"},
+                    "data": {"content": f"```icalendar\n{result}\n```\n"},
                 }
             )
 
@@ -221,23 +221,28 @@ class Tools:
     async def create_icalendar_event(
         self,
         __event_emitter__: Callable[[dict], Awaitable[None]],
-        summary: str,
         dtstart: str,
         dtstamp: str = None,
         dtend: str = None,
         location: str = None,
+        summary: str = None,
         description: str = None
     ) -> str:
         """
         Create a new iCalendar Event item based on the input parameters.
-        :param summary: The required summary of the Event.
         :param dtstart: The start date-time of the Event.
         :param dtstamp: The timestamp of the Event.
         :param dtend: The end date-time of the Event.
         :param location: The location of the Event.
-        :param description: The description of the Event.
+        :param summary: The required summary of the Event.
+        :param description: The optional description of the Event.
         :return: The iCalendar ICS formatted Event item.
         """
+        if not summary:
+            description = summary
+        if not description:
+            description = summary
+
         cal = vobject.iCalendar()
 
         event = cal.add('vevent')
@@ -269,7 +274,7 @@ class Tools:
             await __event_emitter__(
                 {
                     "type": "message",
-                    "data": {"content": f"```VCALENDAR\n{result}\n```\n"},
+                    "data": {"content": f"```icalendar\n{result}\n```\n"},
                 }
             )
             return result
