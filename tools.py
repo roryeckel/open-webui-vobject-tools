@@ -1,5 +1,5 @@
 """
-title: VCard Generation Toolkit
+title: VCF & iCal
 author: ex0dus
 author_url: https://github.com/roryeckel
 version: 0.0.1
